@@ -2,3 +2,6 @@ package-lock.json
 node_modules/
 *.tmp
 *.save
+*-linux
+*-macos
+*-win.exe

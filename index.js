@@ -75,13 +75,29 @@ if (require.main == module) {
 		for (var i = 0; i < k.length; ++i) { for (var j = 0; j < opt.alias[k[i]].length; ++j) {
 			if (opt.alias[k[i]][j] != k[i]) { delete options[opt.alias[k[i]][j]]; }}}
 		delete opt;
-		if (options.help || (options.text == null && options.font == null && options.size == null)) {
+		if (options.help || (options.stdin == null && options.text == null && options.font == null && options.size == null)) {
 			console.error("--font -f   what font to use");
 			console.error("--text -t   the text to use");
 			console.error("--stdin -d  read text from stdin");
 			console.error("--size -s   size of the font, default is 50");
 			process.exit(1);
 			return;
+		}
+		if (options.text != null && options.stdin) { console.error("--text and --stdin cannot both be used"); return; }
+		if (options.stdin) {
+			var readline = require("readline");
+			options.text = "";
+			var ended = false;
+			process.stdin.on("data", (d) => {
+				if (!ended) options.text += d.toString();
+			});
+			await new Promise((res, rej) => {
+				process.stdin.once("end", () => {
+					res();
+				});
+				process.stdin.once("error", rej);
+			});
+			ended = true;
 		}
 		if (unknownOpt !== undefined) { console.error("unknown option "+sanitize(unknownOpt)); process.exit(2); return; }
 		if (unknown !== undefined) { console.error("unexpected "+sanitize(unknown)); process.exit(2); return; }
