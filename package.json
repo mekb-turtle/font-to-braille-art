@@ -1,0 +1,12 @@
+{
+  "name": "font-to-braille-art",
+  "version": "1.0.0",
+  "description": "A tool to turn text to big characters using braille unicode characters (like ascii art)",
+  "main": "index.js",
+  "author": "mekb-turtle",
+  "dependencies": {
+    "canvas": "^2.9.0",
+    "jimp": "^0.16.1",
+    "minimist": "^1.2.5"
+  }
+}
