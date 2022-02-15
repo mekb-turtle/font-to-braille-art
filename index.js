@@ -5,7 +5,11 @@ const m = async (obj) => {
 	var text = obj.text;
 	var font = obj.font;
 	var size = obj.size;
+	var invert = obj.invert;
 	if (size == null) size = 50;
+	if (invert == null) invert == false;
+	if (typeof invert != "boolean")
+		throw "invert must be a boolean";
 	if (typeof size != "number" || size <= 0 || Math.floor(size) != size)
 		throw "size must be a positive integer";
 	if (size > 1000)
@@ -46,7 +50,9 @@ const m = async (obj) => {
 		for (var x = 0; x < width; x += 2) {
 			var brailleArray = [ [0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [0, 3], [1, 3] ];
 			var charCode = brailleArray.reduce((total, v, i) => {
-				return total + (jimp.intToRGBA(image.getPixelColor(x + v[0], y + v[1])).a > 127) * (1 << i);
+				return total + (((
+					jimp.intToRGBA(image.getPixelColor(x + v[0], y + v[1])).a > 127
+					) ^ (invert)) * (1 << i));
 			}, 0x2800);
 			var char = String.fromCharCode(charCode);
 			s += char;
@@ -67,19 +73,20 @@ if (require.main == module) {
 					if (unknown === undefined) { unknown = e }
 				} return false; },
 			string: [ "text", "font" ],
-			boolean: [ "help", "stdin" ],
-			alias: { "text": [ "t" ], "font": [ "f" ], "size": [ "s" ], "help": [ "h", "?" ], "stdin": [ "d" ] },
+			boolean: [ "help", "stdin", "invert" ],
+			alias: { "text": [ "t" ], "font": [ "f" ], "size": [ "s" ], "help": [ "h", "?" ], "stdin": [ "d" ], "invert": [ "i" ] },
 		};
 		var options = require("minimist")(process.argv.slice(2), opt);
 		var k = Object.keys(opt.alias);
 		for (var i = 0; i < k.length; ++i) { for (var j = 0; j < opt.alias[k[i]].length; ++j) {
 			if (opt.alias[k[i]][j] != k[i]) { delete options[opt.alias[k[i]][j]]; }}}
 		delete opt;
-		if (options.help || (options.stdin == null && options.text == null && options.font == null && options.size == null)) {
-			console.error("--font -f   what font to use");
-			console.error("--text -t   the text to use");
-			console.error("--stdin -d  read text from stdin");
-			console.error("--size -s   size of the font, default is 50");
+		if (options.help || Object.keys(options).length == 1) {
+			console.error("--font -f     what font to use");
+			console.error("--text -t     the text to use");
+			console.error("--stdin -d    read text from stdin");
+			console.error("--size -s     size of the font, default is 50");
+			console.error("--invert -i   inverts the output");
 			process.exit(1);
 			return;
 		}
@@ -99,8 +106,8 @@ if (require.main == module) {
 			});
 			ended = true;
 		}
-		if (unknownOpt !== undefined) { console.error("unknown option "+sanitize(unknownOpt)); process.exit(2); return; }
-		if (unknown !== undefined) { console.error("unexpected "+sanitize(unknown)); process.exit(2); return; }
+		if (unknownOpt !== undefined) { console.error("unknown option \""+sanitize(unknownOpt)+"\""); process.exit(2); return; }
+		if (unknown !== undefined) { console.error("unexpected \""+sanitize(unknown)+"\""); process.exit(2); return; }
 		delete unknownOpt, unknown;
 		try {
 			var a = await m(options);
