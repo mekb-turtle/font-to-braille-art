@@ -1,5 +1,5 @@
 const sanitize = a => a.replace(/[\x00-\x1f\x7f-\x9f]/g,"");
-const m = async (obj) => {
+const textToBrailleArt = async (obj) => {
 	if (typeof obj != "object" && !Array.isArray(obj))
 		throw "argument must be an object";
 	var text = obj.text;
@@ -43,9 +43,13 @@ const m = async (obj) => {
 	const ctx = canvas.getContext("2d");
 	ctx.font = f;
 	ctx.fillText(text, size / 4, textSize.actualBoundingBoxAscent + size / 4);
+	return await imageToBrailleArt(canvas.toBuffer(), invert);
+};
+const imageToBrailleArt = async (input, invert) => {
 	const jimp = require("jimp");
-	const image = await jimp.read(canvas.toBuffer());
+	const image = await jimp.read(input);
 	var s = "";
+	var { width, height } = image.bitmap;
 	for (var y = 0; y < height; y += 4) {
 		for (var x = 0; x < width; x += 2) {
 			var brailleArray = [ [0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [0, 3], [1, 3] ];
@@ -81,7 +85,7 @@ if (require.main == module) {
 		for (var i = 0; i < k.length; ++i) { for (var j = 0; j < opt.alias[k[i]].length; ++j) {
 			if (opt.alias[k[i]][j] != k[i]) { delete options[opt.alias[k[i]][j]]; }}}
 		delete opt;
-		if (options.help || Object.keys(options).length == 1) {
+		if (options.help || process.argv.length <= 2) {
 			console.error("--font -f     what font to use");
 			console.error("--text -t     the text to use");
 			console.error("--stdin -d    read text from stdin");
@@ -90,6 +94,8 @@ if (require.main == module) {
 			process.exit(1);
 			return;
 		}
+		if (unknownOpt !== undefined) { console.error("unknown option \""+sanitize(unknownOpt)+"\""); process.exit(2); return; }
+		if (unknown !== undefined) { console.error("unexpected \""+sanitize(unknown)+"\""); process.exit(2); return; }
 		if (options.text != null && options.stdin) { console.error("--text and --stdin cannot both be used"); return; }
 		if (options.stdin) {
 			var readline = require("readline");
@@ -106,11 +112,9 @@ if (require.main == module) {
 			});
 			ended = true;
 		}
-		if (unknownOpt !== undefined) { console.error("unknown option \""+sanitize(unknownOpt)+"\""); process.exit(2); return; }
-		if (unknown !== undefined) { console.error("unexpected \""+sanitize(unknown)+"\""); process.exit(2); return; }
 		delete unknownOpt, unknown;
 		try {
-			var a = await m(options);
+			var a = await textToBrailleArt(options);
 			if (a) console.log(a);
 			process.exit(0);
 			return;
@@ -121,5 +125,5 @@ if (require.main == module) {
 		}
 	})();
 } else {
-	module.exports = m;
+	module.exports = { textToBrailleArt, imageToBrailleArt };
 }
