@@ -6,10 +6,14 @@ const textToBrailleArt = async (obj) => {
 	var font = obj.font;
 	var size = obj.size;
 	var invert = obj.invert;
+	var spaces = obj.spaces;
+	if (invert == null) invert = false;
+	if (spaces == null) spaces = false;
 	if (size == null) size = 50;
-	if (invert == null) invert == false;
 	if (typeof invert != "boolean")
 		throw "invert must be a boolean";
+	if (typeof spaces != "boolean")
+		throw "spaces must be a boolean";
 	if (typeof size != "number" || size <= 0 || Math.floor(size) != size)
 		throw "size must be a positive integer";
 	if (size > 1000)
@@ -43,9 +47,15 @@ const textToBrailleArt = async (obj) => {
 	const ctx = canvas.getContext("2d");
 	ctx.font = f;
 	ctx.fillText(text, size / 4, textSize.actualBoundingBoxAscent + size / 4);
-	return await imageToBrailleArt(canvas.toBuffer(), invert);
+	return await imageToBrailleArt(canvas.toBuffer(), invert, spaces);
 };
-const imageToBrailleArt = async (input, invert) => {
+const imageToBrailleArt = async (input, invert, spaces) => {
+	if (invert == null) invert = false;
+	if (spaces == null) spaces = false;
+	if (typeof invert != "boolean")
+		throw "invert must be a boolean";
+	if (typeof spaces != "boolean")
+		throw "spaces must be a boolean";
 	const jimp = require("jimp");
 	const image = await jimp.read(input);
 	var s = "";
@@ -58,6 +68,7 @@ const imageToBrailleArt = async (input, invert) => {
 					jimp.intToRGBA(image.getPixelColor(x + v[0], y + v[1])).a > 127
 					) ^ (invert)) * (1 << i));
 			}, 0x2800);
+			if (charCode == 0x2800 && spaces) charCode = 0x20;
 			var char = String.fromCharCode(charCode);
 			s += char;
 		}
@@ -77,8 +88,8 @@ if (require.main == module) {
 					if (unknown === undefined) { unknown = e }
 				} return false; },
 			string: [ "text", "font" ],
-			boolean: [ "help", "stdin", "invert" ],
-			alias: { "text": [ "t" ], "font": [ "f" ], "size": [ "s" ], "help": [ "h", "?" ], "stdin": [ "d" ], "invert": [ "i" ] },
+			boolean: [ "help", "stdin", "invert", "spaces" ],
+			alias: { "text": [ "t" ], "font": [ "f" ], "size": [ "s" ], "help": [ "h", "?" ], "stdin": [ "d" ], "invert": [ "i" ], "spaces": [ "m" ] },
 		};
 		var options = require("minimist")(process.argv.slice(2), opt);
 		var k = Object.keys(opt.alias);
@@ -91,6 +102,7 @@ if (require.main == module) {
 			console.error("--stdin -d    read text from stdin");
 			console.error("--size -s     size of the font, default is 50");
 			console.error("--invert -i   inverts the output");
+			console.error("--spaces -m   changes blank braille characters to spaces");
 			process.exit(1);
 			return;
 		}

@@ -1,6 +1,6 @@
 {
   "name": "font-to-braille-art",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A tool to turn text to big characters using braille unicode characters (like ascii art)",
   "main": "index.js",
   "scripts": {
